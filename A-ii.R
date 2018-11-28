@@ -1,4 +1,4 @@
-# Part A
+# Solutions to problem i of Part A of the project (Max Holloway)
 # 
 # download.file('http://math.hmc.edu/m35f/2010_sqf_m35.csv',
 #               '2010_sqf_m35.csv')
@@ -13,20 +13,6 @@
 # 
 # sqf2010 <- subset(sqf2010, sqf2010$weight > 50 & sqf2010$weight < 400)
 # sqf2010 <- subset(sqf2010, sqf2010$age < 100)
-
-
-# i
-
-# a: confidence interval for perobs over whole sample
-xbar <- mean(sqf2015$perobs)
-n <- length(sqf2015$perobs)
-s <- sqrt( sum( (sqf2015$perobs - xbar)^2 )/ (n-1) )
-CV <- 1.96
-lower <- xbar - CV*s/sqrt(n)
-upper <- xbar + CV*s/sqrt(n)
-
-# b:
-## Fill in and understand code from Keizo ##
 
 # ii
 

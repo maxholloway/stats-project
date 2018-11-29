@@ -1,0 +1,78 @@
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Initialize data
+
+```{r warning=FALSE}
+if (!file.exists("2010_sqf_m35.csv")) {
+  download.file("http://math.hmc.edu/m35f/2010_sqf_m35.csv", "2010_sqf_m35.csv")
+}
+if (!file.exists("2015_sqf_m35.csv")) {
+  download.file("http://math.hmc.edu/m35f/2015_sqf_m35.csv", "2015_sqf_m35.csv")
+}
+sqf2010 <- read.csv("2010_sqf_m35.csv")
+sqf2015 <- read.csv("2015_sqf_m35.csv")
+sqf2015 <- sqf2015[!sqf2015$perstop == "*" && !sqf2015$perstop == " ",]
+sqf2015$perstop <- as.numeric(as.character(sqf2015$perstop))
+```
+
+## Part iv
+
+```{r}
+sqf2010.male <- sqf2010[sqf2010$sex == "M",]
+sqf2010.female <- sqf2010[sqf2010$sex == "F",]
+```
+
+### Frisked
+
+```{r}
+x_male_frisked <- sum(sqf2010.male$frisked)
+n_male_frisked <- length(sqf2010.male$frisked)
+x_female_frisked <- sum(sqf2010.female$frisked)
+n_female_frisked <- length(sqf2010.female$frisked)
+
+v_frisked <- prop.test(x = c(x_male_frisked, x_female_frisked),
+                       n = c(n_male_frisked, n_female_frisked),
+                       alternative = "two.sided",
+                       conf.level = 0.95)
+
+print(v_frisked)
+```
+
+The null hypothesis is that there is no difference in the proportion of males that were frisked and females that were frisked ($ p_{male,frisked} - p_{female,frisked} = 0 $).
+
+The alternative hypothesis is that there is a difference in the proportion of males that were frisked and females that were frisked ($ p_{male,frisked} - p_{female,frisked} \neq 0 $).
+
+From the two-sample proportion test for frisked, we see that
+`r 100 * as.numeric(v_frisked$estimate[1])`\% of males were frisked and
+`r 100 * as.numeric(v_frisked$estimate[2])`\% of females were frisked.
+
+Furthermore, the p-value of this difference is close to zero, and is less than any alpha value given. Therefore we reject the null hypothesis and conclude that there is a difference in the proportion of males that were frisked and females that were frisked.
+
+### Arrested
+
+```{r}
+x_male_arrested <- sum(sqf2010.male$arstmade)
+n_male_arrested <- length(sqf2010.male$arstmade)
+x_female_arrested <- sum(sqf2010.female$arstmade)
+n_female_arrested <- length(sqf2010.female$arstmade)
+
+v_arrested <- prop.test(x = c(x_male_arrested, x_female_arrested),
+                        n = c(n_male_arrested, n_female_arrested),
+                        alternative = "two.sided",
+                        conf.level = 0.95)
+
+print(v_arrested)
+```
+
+The null hypothesis is that there is no difference in the proportion of males that were arrested and females that were arrested ($ p_{male,arrested} - p_{female,arrested} = 0 $).
+
+The alternative hypothesis is that there is a difference in the proportion of males that were arrested and females that were arrested ($ p_{male,arrested} - p_{female,arrested} \neq 0 $).
+
+From the two-sample proportion test for arrested, we see that
+`r 100 * as.numeric(v_arrested$estimate[1])`\% of males were arrested and
+`r 100 * as.numeric(v_arrested$estimate[2])`\% of females were arrested.
+
+Furthermore, the p-value of this difference is close to zero, and is less than any alpha value given. Therefore we reject the null hypothesis and conclude that there is a difference in the proportion of males that were arrested and females that were arrested.

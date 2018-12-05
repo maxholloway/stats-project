@@ -1,0 +1,75 @@
+---
+title: "Project Part B"
+author: "Bowen Jiang"
+date: "November 29, 2018"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+sqf2010=read.csv("2010_sqf_m35.csv")
+sqf2015=read.csv("2015_sqf_m35.csv")
+
+sqf2015=sqf2015[!sqf2015$perstop=="**" & !sqf2015$perstop==" ",]
+sqf2015$perstop=as.numeric(as.character(sqf2015$perstop))
+```
+
+
+##  Part A
+
+iv. For three racial groups, compute 95\% confidence interval for the proportion of suspects that were frisked (for 2015).
+
+The races are,
+
+```{r eval=TRUE}
+unique(sqf2015$race)
+```
+
+White
+
+```{r}
+data=sqf2015$frisked[sqf2010$race=="WHITE"]
+data=data[!is.na(data)]
+n=length(data)
+p=mean(data)
+upperbound=p+1.96*sqrt(p*(1-p)/n)
+lowerbound=p-1.96*sqrt(p*(1-p)/n)
+c(lowerbound,upperbound)
+```
+
+Black
+
+```{r}
+data=sqf2015$frisked[sqf2010$race=="BLACK"]
+data=data[!is.na(data)]
+n=length(data)
+p=mean(data)
+upperbound=p+1.96*sqrt(p*(1-p)/n)
+lowerbound=p-1.96*sqrt(p*(1-p)/n)
+c(lowerbound,upperbound)
+```
+
+
+White-Hipanic
+
+```{r}
+data=sqf2015$frisked[sqf2010$race=="WHITE-HISPANIC"]
+data=data[!is.na(data)]
+n=length(data)
+p=mean(data)
+upperbound=p+1.96*sqrt(p*(1-p)/n)
+lowerbound=p-1.96*sqrt(p*(1-p)/n)
+c(lowerbound,upperbound)
+```
+
+
+
+
+
+
+
+
+

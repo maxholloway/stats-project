@@ -14,8 +14,13 @@ if (!file.exists("2015_sqf_m35.csv")) {
 }
 sqf2010 <- read.csv("2010_sqf_m35.csv")
 sqf2015 <- read.csv("2015_sqf_m35.csv")
-sqf2015 <- sqf2015[!sqf2015$perstop == "*" && !sqf2015$perstop == " ",]
-sqf2015$perstop <- as.numeric(as.character(sqf2015$perstop))
+
+sqf2015 = sqf2015[!sqf2015$perstop=="**"
+                  & !sqf2015$perstop==" ",]
+sqf2015$perstop = as.numeric(as.character(sqf2015$perstop))
+
+sqf2010 <- subset(sqf2010, sqf2010$weight > 50 & sqf2010$weight < 400)
+sqf2010 <- subset(sqf2010, sqf2010$age < 100)
 ```
 
 ## Set helper functions

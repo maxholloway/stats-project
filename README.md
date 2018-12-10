@@ -1,2 +1,2 @@
 # stats-project
-Stats projects for Math 35
+Stats project for Math 35

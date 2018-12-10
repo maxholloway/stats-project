@@ -1,0 +1,32 @@
+## Initialize Data
+```{r warning=FALSE}
+if (!file.exists("2010_sqf_m35.csv")) {
+  download.file("http://math.hmc.edu/m35f/2010_sqf_m35.csv", "2010_sqf_m35.csv")
+}
+if (!file.exists("2015_sqf_m35.csv")) {
+  download.file("http://math.hmc.edu/m35f/2015_sqf_m35.csv", "2015_sqf_m35.csv")
+}
+sqf2010 <- read.csv("2010_sqf_m35.csv")
+sqf2015 <- read.csv("2015_sqf_m35.csv")
+
+sqf2015 = sqf2015[!sqf2015$perstop=="**"
+                  & !sqf2015$perstop==" ",]
+sqf2015$perstop = as.numeric(as.character(sqf2015$perstop))
+
+sqf2010 <- subset(sqf2010, sqf2010$weight > 50 & sqf2010$weight < 400)
+sqf2010 <- subset(sqf2010, sqf2010$age < 100)
+```
+
+## T Test Analysis
+Here we are given a t test of the difference of two binary variables (arstmade and contrabn). We use a two sided test with confidence level of 95%. 
+
+```{r eval=TRUE}
+t.test(sqf2010$arstmade,
+       sqf2010$contrabn,
+       alternative = "two.sided",
+       mu = 0, paired = TRUE,
+       var.equal = TRUE,
+       conf.level = 0.95)
+```
+
+We then achieve a t value of 165.04 and a p value of 2.2e-16. This correlates to a 95 percent confidence interval of: 0.04826533 to 0.04942545. The outputted sample mean of the differences is 0.04884539. The implications of this sample mean of differences is that for the sample calculated the majority of stops resulted in no contraban or arrest with a slight skew towards an arrest made without contraban. A pval that small also implies that the null hypothesis of both binary variables being equal (hence correlated) is rejected.

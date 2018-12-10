@@ -1,5 +1,6 @@
 ---
 title: "Final Project Part A"
+output: pdf_document
 ---
 
 ## Initialize data

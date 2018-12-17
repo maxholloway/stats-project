@@ -1,0 +1,81 @@
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Initialize data
+
+```{r warning=FALSE}
+if (!file.exists("2010_sqf_m35.csv")) {
+  download.file("http://math.hmc.edu/m35f/2010_sqf_m35.csv", "2010_sqf_m35.csv")
+}
+if (!file.exists("2015_sqf_m35.csv")) {
+  download.file("http://math.hmc.edu/m35f/2015_sqf_m35.csv", "2015_sqf_m35.csv")
+}
+sqf2010 <- read.csv("2010_sqf_m35.csv")
+sqf2015 <- read.csv("2015_sqf_m35.csv")
+sqf2015 <- sqf2015[!sqf2015$perstop == "*" && !sqf2015$perstop == " ",]
+sqf2015$perstop <- as.numeric(as.character(sqf2015$perstop))
+```
+
+## Mosaic plot
+
+```{r}
+sqf2010.arrested <- sqf2010[sqf2010$arstmade == 1,]
+sqf2010.arrested <- sqf2010.arrested[!sqf2010.arrested$city == " ",]
+sqf2010.arrested$city <- droplevels(sqf2010.arrested$city)
+
+city_labels <- c("Bronx",
+                 "Brooklyn",
+                 "Manhatten",
+                 "Queens",
+                 "Staten Is.")
+race_labels <- c("Amer. Indian",
+            "Asian / Pac.",
+            "Black",
+            "Black-Hispanic",
+            "Other",
+            "Unknown",
+            "White",
+            "White-Hispanic")
+city_colors = rainbow(5, v = 0.8)
+race_colors = rainbow(8, v = 0.8)
+```
+
+```{r}
+par(mar = c(1, 1, 3, 1))
+mosaicplot(table(sqf2010.arrested$city, sqf2010.arrested$race),
+           main = "Proportion of races per city of arrested",
+           cex.axis = 0.5,
+           las = 1,
+           off = 1,
+           color = race_colors,
+           border = "white")
+```
+
+We note that compared to the average, there is a higher proportion of black arrests in Brooklyn. Furthermore, there is a higher proportion of White-Hispanic arrests in the Bronx.
+
+## Paired plot
+
+```{r}
+barplot(table(sqf2010.arrested$city, sqf2010.arrested$race),
+        main = "Arrests per city per race",
+        beside = TRUE,
+        names.arg = race_labels,
+        col = city_colors,
+        cex.names = 0.7,
+        las = 2,
+        legend.text = city_labels)
+
+barplot(table(sqf2010.arrested$race, sqf2010.arrested$city),
+        main = "Arrests per race per city",
+        #beside = TRUE,
+        names.arg = city_labels,
+        col = race_colors,
+        cex.names = 0.7,
+        las = 2,
+        legend.text = race_labels)
+```
+
+Now looking at the division of arrests numerically as opposed to proportionally, we can see that regardless of city, the most arrests were black arrests. Furthermore, the most arrests were made in Manhatten.
+

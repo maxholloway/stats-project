@@ -1,0 +1,129 @@
+---
+title: "StatsProject"
+author: "Bowen Jiang"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(eval = TRUE)
+```
+
+##  Comparison between 2010 and 2015
+
+1. Data Preprocessing
+
+```{r}
+sqf2010=read.csv("2010_sqf_m35.csv")
+sqf2015=read.csv("2015_sqf_m35.csv")
+
+sqf2015=sqf2015[!sqf2015$perstop=="**" & !sqf2015$perstop==" ",]
+sqf2015$perstop=as.numeric(as.character(sqf2015$perstop))
+sqf2010$perstop = as.numeric(as.character(sqf2010$perstop))
+```
+
+
+2.  Overview
+
+We are mainly interested in how the composition of people arrested changes between 2010 and 2015, espeically in terms of races.
+
+We can first look at some basic information of the two years.
+
+The number of people who got arrested in 2010 is,
+
+```{r}
+arst2010=sqf2010$arstmade
+sum(arst2010)
+```
+
+Out of a population size of
+
+```{r}
+length(arst2010)
+```
+
+Therefore, the percentage of arrest is around 6.83\%
+
+```{r}
+sum(arst2010)/length(arst2010)
+```
+
+Similarly, for 2015,
+
+```{r}
+arst2015=sqf2015$arstmade
+sum(arst2015)
+length(arst2015)
+sum(arst2015)/length(arst2015)
+```
+
+We have 3936 people who got arrested out of 22502, the arrest rate is around 17.49\%
+
+3.
+
+We can then look at the breakdown of arrested population in race.
+
+In 2010, we have,
+
+```{r}
+counts2010=table(sqf2010$arstmade,sqf2010$race)
+counts2010
+barplot(counts2010)
+```
+
+
+we can also convert the data into percentage
+
+```{r}
+perc2010=prop.table(counts2010,2)
+perc2010
+```
+
+then we have a percentage of arrested for each race,
+
+American Indian/Alaskan Native: 4.89\%
+
+Asian/Parcific Islander: 6.69\%
+
+Black:  6.83\%
+
+Black-hispanic: 7.83\%
+
+Other: 5.57\%
+
+Unknown:  6.39\%
+
+White: 6.75\%
+
+White-hispanic: 6.80\%
+
+which we can also plot on a barplot,
+
+```{r}
+barplot(perc2010)
+```
+
+similarly, we calculate the statistics of 2015,
+
+```{r}
+counts2015=table(sqf2015$arstmade,sqf2015$race)
+counts2015
+barplot(counts2015)
+perc2015=prop.table(counts2015,2)
+perc2015
+barplot(perc2015)
+```
+
+To visualize the difference, we put the two bar plots of percentage together,
+
+```{r}
+par(mfrow=c(1,2))
+barplot(perc2010)
+barplot(perc2015)
+par(mfrow=c(1,2))
+```
+
+For year 2010, the race that is most likely to be arrested is black-hispanic, and it stays the same for year 2015.
+
+
+

@@ -2,8 +2,8 @@
 title: "Team-Chosen Questions"
 author: "Keizo Morgan, Max Holloway, Bowen Jiang, and Jorge Canedo"
 output:
-  pdf_document: default
   html_document: default
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -614,4 +614,3 @@ numWhiteHisp <- c(dim(sqf2015BXWH)[1], dim(sqf2015BYWH)[1], dim(sqf2015MWH)[1], 
 prop.test(x=numWhiteHispArrested, n=numWhiteHisp)
 ```
 
-# Appendix B: Neural Net for Predicting

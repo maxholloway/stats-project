@@ -1,0 +1,620 @@
+---
+title: "Team-Chosen Questions"
+author: "Keizo Morgan, Max Holloway, Bowen Jiang, and Jorge Canedo"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Introduction
+Our group is concerned with discrimination in the Stop-Question-Frisk policy in 2015. In particular we would like to see what neighborhoods arrest more people of a certain race or gender. We explored multiple factors that may point to discrimination. In one test, we examine the rates of arrest for different races in each of the neighborhoods. Coupled with our knowledge of the population demographics of those neighborhoods in 2015, we can determine whether or not certain racial groups are subject to arrest more than others.
+
+We will also explore how these rates changed between 2010 and 2015, testing to see if the changes are significant. While we hope that these statistical tests can help to identify racism in the NYPD, we acknowledge that the results of this study must be taken in context.
+
+# Initialize Data
+Here we get the data necessary for the statistical analysis.
+
+```{r warning=FALSE}
+if (!file.exists("2015_sqf_m35.csv")) {
+  download.file("http://math.hmc.edu/m35f/2015_sqf_m35.csv", "2015_sqf_m35.csv")
+}
+if(!file.exists("2015_sqf_m35.csv")){
+  download.file('http://math.hmc.edu/m35f/2010_sqf_m35.csv',
+                '2010_sqf_m35.csv')
+}
+
+sqf2010 <- read.csv("2010_sqf_m35.csv")
+sqf2010 <- subset(sqf2010, sqf2010$weight > 50 & sqf2010$weight < 400)
+sqf2010 <- subset(sqf2010, sqf2010$age < 100)
+
+sqf2015 <- read.csv("2015_sqf_m35.csv")
+sqf2015 = sqf2015[!sqf2015$perstop=="**"
+                  & !sqf2015$perstop==" ",]
+sqf2015$perstop = as.numeric(as.character(sqf2015$perstop))
+```
+
+# Exploratory Graphical Analysis
+
+In order to get a summary of our data, we will first show some plots that shed light on the variables that we will analyze later.
+
+## Mosaic plot
+
+```{r}
+sqf2010.arrested <- sqf2010[sqf2010$arstmade == 1,]
+sqf2010.arrested <- sqf2010.arrested[!sqf2010.arrested$city == " ",]
+sqf2010.arrested$city <- droplevels(sqf2010.arrested$city)
+
+city_labels <- c("Bronx",
+                 "Brooklyn",
+                 "Manhatten",
+                 "Queens",
+                 "Staten Is.")
+race_labels <- c("Amer. Indian",
+            "Asian / Pac.",
+            "Black",
+            "Black-Hispanic",
+            "Other",
+            "Unknown",
+            "White",
+            "White-Hispanic")
+city_colors = rainbow(5, v = 0.8)
+race_colors = rainbow(8, v = 0.8)
+```
+
+```{r}
+par(mar = c(1, 1, 3, 1))
+mosaicplot(table(sqf2010.arrested$city, sqf2010.arrested$race),
+           main = "Proportion of races per city of arrested",
+           cex.axis = 0.5,
+           las = 1,
+           off = 1,
+           color = race_colors,
+           border = "white")
+```
+
+We note that compared to the average, there is a higher proportion of black arrests in Brooklyn. Furthermore, there is a higher proportion of White-Hispanic arrests in the Bronx. However, it is possible that this difference in proportion is caused by different demographics of each neighborhood.
+
+## Paired plot
+
+```{r}
+barplot(table(sqf2010.arrested$city, sqf2010.arrested$race),
+        main = "Arrests per city per race",
+        beside = TRUE,
+        names.arg = race_labels,
+        col = city_colors,
+        cex.names = 0.7,
+        las = 2,
+        legend.text = city_labels)
+
+barplot(table(sqf2010.arrested$race, sqf2010.arrested$city),
+        main = "Arrests per race per city",
+        #beside = TRUE,
+        names.arg = city_labels,
+        col = race_colors,
+        cex.names = 0.7,
+        las = 2,
+        legend.text = race_labels)
+```
+
+Now looking at the division of arrests numerically as opposed to proportionally, we can see that regardless of city, the most arrests were black arrests. Furthermore, the most arrests were made in Manhattan.
+
+# Proportion Testing for Races in different Neighborhoods
+In this section, we will explore the rates of arrest for people of each race in each neighborhood. Did police in some neighborhoods arrest people of certain races at higher rates in 2015? In order to answer this question, we perform a multiple proportion test over the rate of arrest for each race, and we test to see if there are higher rates of arrest in certain neighborhood. Thus, our null hypothesis for each test is that people of each race are arrested at the same rate in each neighborhood, and the alternate hypothesis is that the proportion of people arrested is different.
+
+The results of all of these tests for 2010 and 2015 are in the Appendix, however the general synopsis of the results is simple: people of almost all races are arrested more in some neighborhoods than others. The proportion test for blacks' arrest rate in 2015 is shown below.
+
+
+```{r 2015 Proportion Tests, echo=FALSE}
+
+#                   SUBSET DATA
+#Subset the data by race in Bronx
+sqf2015BX<-subset(sqf2015, sqf2015$city=="BRONX")
+sqf2015BXAI <-subset(sqf2015BX, sqf2015BX$race=="AMERICAN INDIAN/ALASKAN NATIVE")
+sqf2015BXA <-subset(sqf2015BX, sqf2015BX$race=="ASIAN/PACIFIC ISLANDER")
+sqf2015BXB <-subset(sqf2015BX, sqf2015BX$race=="BLACK")
+sqf2015BXBH <-subset(sqf2015BX, sqf2015BX$race=="BLACK-HISPANIC")
+sqf2015BXO <-subset(sqf2015BX, sqf2015BX$race=="OTHER")
+sqf2015BXU <-subset(sqf2015BX, sqf2015BX$race=="UNKNOWN")
+sqf2015BXW <-subset(sqf2015BX, sqf2015BX$race=="WHITE")
+sqf2015BXWH <-subset(sqf2015BX, sqf2015BX$race=="WHITE-HISPANIC")
+
+#Subset the data by race in Brooklyn
+sqf2015BY<-subset(sqf2015, sqf2015$city=="BROOKLYN")
+sqf2015BYAI <-subset(sqf2015BY, sqf2015BY$race=="AMERICAN INDIAN/ALASKAN NATIVE")
+sqf2015BYA <-subset(sqf2015BY, sqf2015BY$race=="ASIAN/PACIFIC ISLANDER")
+sqf2015BYB <-subset(sqf2015BY, sqf2015BY$race=="BLACK")
+sqf2015BYBH <-subset(sqf2015BY, sqf2015BY$race=="BLACK-HISPANIC")
+sqf2015BYO <-subset(sqf2015BY, sqf2015BY$race=="OTHER")
+sqf2015BYU <-subset(sqf2015BY, sqf2015BY$race=="UNKNOWN")
+sqf2015BYW <-subset(sqf2015BY, sqf2015BY$race=="WHITE")
+sqf2015BYWH <-subset(sqf2015BY, sqf2015BY$race=="WHITE-HISPANIC")
+
+#Subset the data by race in Manhattan
+sqf2015M<-subset(sqf2015, sqf2015$city=="MANHATTAN")
+sqf2015MAI <-subset(sqf2015M, sqf2015M$race=="AMERICAN INDIAN/ALASKAN NATIVE")
+sqf2015MA <-subset(sqf2015M, sqf2015M$race=="ASIAN/PACIFIC ISLANDER")
+sqf2015MB <-subset(sqf2015M, sqf2015M$race=="BLACK")
+sqf2015MBH <-subset(sqf2015M, sqf2015M$race=="BLACK-HISPANIC")
+sqf2015MO <-subset(sqf2015M, sqf2015M$race=="OTHER")
+sqf2015MU <-subset(sqf2015M, sqf2015M$race=="UNKNOWN")
+sqf2015MW <-subset(sqf2015M, sqf2015M$race=="WHITE")
+sqf2015MWH <-subset(sqf2015M, sqf2015M$race=="WHITE-HISPANIC")
+
+#Subset the data by race in Queens
+sqf2015Q<-subset(sqf2015, sqf2015$city=="QUEENS")
+sqf2015QAI <-subset(sqf2015Q, sqf2015Q$race=="AMERICAN INDIAN/ALASKAN NATIVE")
+sqf2015QA <-subset(sqf2015Q, sqf2015Q$race=="ASIAN/PACIFIC ISLANDER")
+sqf2015QB <-subset(sqf2015Q, sqf2015Q$race=="BLACK")
+sqf2015QBH <-subset(sqf2015Q, sqf2015Q$race=="BLACK-HISPANIC")
+sqf2015QO <-subset(sqf2015Q, sqf2015Q$race=="OTHER")
+sqf2015QU <-subset(sqf2015Q, sqf2015Q$race=="UNKNOWN")
+sqf2015QW <-subset(sqf2015Q, sqf2015Q$race=="WHITE")
+sqf2015QWH <-subset(sqf2015Q, sqf2015Q$race=="WHITE-HISPANIC")
+
+#Subset the data by race in Staten Island
+sqf2015SI<-subset(sqf2015, sqf2015$city=="STATEN IS")
+sqf2015SIAI <-subset(sqf2015SI, sqf2015SI$race=="AMERICAN INDIAN/ALASKAN NATIVE")
+sqf2015SIA <-subset(sqf2015SI, sqf2015SI$race=="ASIAN/PACIFIC ISLANDER")
+sqf2015SIB <-subset(sqf2015SI, sqf2015SI$race=="BLACK")
+sqf2015SIBH <-subset(sqf2015SI, sqf2015SI$race=="BLACK-HISPANIC")
+sqf2015SIO <-subset(sqf2015SI, sqf2015SI$race=="OTHER")
+sqf2015SIU <-subset(sqf2015SI, sqf2015SI$race=="UNKNOWN")
+sqf2015SIW <-subset(sqf2015SI, sqf2015SI$race=="WHITE")
+sqf2015SIWH <-subset(sqf2015SI, sqf2015SI$race=="WHITE-HISPANIC")
+
+#                   ARREST RATE PER SUBSET
+#Arrest rate in Bronx
+arstRate2015BX <- sum(sqf2015BX$arstmade)/length(sqf2015BX$arstmade)
+arstRate2015BXAI <- sum(sqf2015BXAI$arstmade)/length(sqf2015BXAI$arstmade)
+arstRate2015BXA <- sum(sqf2015BXA$arstmade)/length(sqf2015BXA$arstmade)
+arstRate2015BXB <- sum(sqf2015BXB$arstmade)/length(sqf2015BXB$arstmade)
+arstRate2015BXBH <- sum(sqf2015BXBH$arstmade)/length(sqf2015BXBH$arstmade)
+arstRate2015BXO <- sum(sqf2015BXO$arstmade)/length(sqf2015BXO$arstmade)
+arstRate2015BXU <- sum(sqf2015BXU$arstmade)/length(sqf2015BXU$arstmade)
+arstRate2015BXW <- sum(sqf2015BXW$arstmade)/length(sqf2015BXW$arstmade)
+arstRate2015BXWH <- sum(sqf2015BXWH$arstmade)/length(sqf2015BXWH$arstmade)
+
+#Arrest rate in Brooklyn
+arstRate2015BY <- sum(sqf2015BY$arstmade)/length(sqf2015BY$arstmade)
+arstRate2015BYAI <- sum(sqf2015BYAI$arstmade)/length(sqf2015BYAI$arstmade)
+arstRate2015BYA <- sum(sqf2015BYA$arstmade)/length(sqf2015BYA$arstmade)
+arstRate2015BYB <- sum(sqf2015BYB$arstmade)/length(sqf2015BYB$arstmade)
+arstRate2015BYBH <- sum(sqf2015BYBH$arstmade)/length(sqf2015BYBH$arstmade)
+arstRate2015BYO <- sum(sqf2015BYO$arstmade)/length(sqf2015BYO$arstmade)
+arstRate2015BYU <- sum(sqf2015BYU$arstmade)/length(sqf2015BYU$arstmade)
+arstRate2015BYW <- sum(sqf2015BYW$arstmade)/length(sqf2015BYW$arstmade)
+arstRate2015BYWH <- sum(sqf2015BYWH$arstmade)/length(sqf2015BYWH$arstmade)
+
+#Arrest rate in Manhattan
+arstRate2015M <- sum(sqf2015M$arstmade)/length(sqf2015M$arstmade)
+arstRate2015MAI <- sum(sqf2015MAI$arstmade)/length(sqf2015MAI$arstmade)
+arstRate2015MA <- sum(sqf2015MA$arstmade)/length(sqf2015MA$arstmade)
+arstRate2015MB <- sum(sqf2015MB$arstmade)/length(sqf2015MB$arstmade)
+arstRate2015MBH <- sum(sqf2015MBH$arstmade)/length(sqf2015MBH$arstmade)
+arstRate2015MO <- sum(sqf2015MO$arstmade)/length(sqf2015MO$arstmade)
+arstRate2015MU <- sum(sqf2015MU$arstmade)/length(sqf2015MU$arstmade)
+arstRate2015MW <- sum(sqf2015MW$arstmade)/length(sqf2015MW$arstmade)
+arstRate2015MWH <- sum(sqf2015MWH$arstmade)/length(sqf2015MWH$arstmade)
+
+#Arrest rate in Queens
+arstRate2015Q <- sum(sqf2015Q$arstmade)/length(sqf2015Q$arstmade)
+arstRate2015QAI <- sum(sqf2015QAI$arstmade)/length(sqf2015QAI$arstmade)
+arstRate2015QA <- sum(sqf2015QA$arstmade)/length(sqf2015QA$arstmade)
+arstRate2015QB <- sum(sqf2015QB$arstmade)/length(sqf2015QB$arstmade)
+arstRate2015QBH <- sum(sqf2015QBH$arstmade)/length(sqf2015QBH$arstmade)
+arstRate2015QO <- sum(sqf2015QO$arstmade)/length(sqf2015QO$arstmade)
+arstRate2015QU <- sum(sqf2015QU$arstmade)/length(sqf2015QU$arstmade)
+arstRate2015QW <- sum(sqf2015QW$arstmade)/length(sqf2015QW$arstmade)
+arstRate2015QWH <- sum(sqf2015QWH$arstmade)/length(sqf2015QWH$arstmade)
+
+#Arrest rate in Staten Island
+arstRate2015SI <- sum(sqf2015SI$arstmade)/length(sqf2015SI$arstmade)
+arstRate2015SIAI <- sum(sqf2015SIAI$arstmade)/length(sqf2015SIAI$arstmade)
+arstRate2015SIA <- sum(sqf2015SIA$arstmade)/length(sqf2015SIA$arstmade)
+arstRate2015SIB <- sum(sqf2015SIB$arstmade)/length(sqf2015SIB$arstmade)
+arstRate2015SIBH <- sum(sqf2015SIBH$arstmade)/length(sqf2015SIBH$arstmade)
+arstRate2015SIO <- sum(sqf2015SIO$arstmade)/length(sqf2015SIO$arstmade)
+arstRate2015SIU <- sum(sqf2015SIU$arstmade)/length(sqf2015SIU$arstmade)
+arstRate2015SIW <- sum(sqf2015SIW$arstmade)/length(sqf2015SIW$arstmade)
+arstRate2015SIWH <- sum(sqf2015SIWH$arstmade)/length(sqf2015SIWH$arstmade)
+
+#                   P-TESTS PER ARREST RATES
+#P-test of arrest rate of Blacks per city
+numBlackArrested <- c(sum(sqf2015BXB$arstmade), sum(sqf2015BYB$arstmade), sum(sqf2015MB$arstmade), sum(sqf2015QB$arstmade), sum(sqf2015SIB$arstmade))
+numBlack <- c(dim(sqf2015BXB)[1], dim(sqf2015BYB)[1], dim(sqf2015MB)[1], dim(sqf2015QB)[1], dim(sqf2015SIB)[1])
+```
+
+## Proportion Test for Blacks arrested in different neighborhoods
+``` {r  echo=FALSE}
+prop.test(x=numBlackArrested, n=numBlack)
+
+#P-test of arrest rate of Black Hispanics per city
+numBlackHispanicArrested <- c(sum(sqf2015BXBH$arstmade), sum(sqf2015BYBH$arstmade), sum(sqf2015MBH$arstmade), sum(sqf2015QBH$arstmade), sum(sqf2015SIBH$arstmade))
+numBlackHispanic <- c(dim(sqf2015BXBH)[1], dim(sqf2015BYBH)[1], dim(sqf2015MBH)[1], dim(sqf2015QBH)[1], dim(sqf2015SIBH)[1])
+```
+
+This test shows that the rate of arrest for black people is not constant across the neighborhoods with a p-value of $p <2.2*10^{-16}$. This is an extremely low number, implying that the different neighborhoods' police arrest black people at higher rates than others. Further, the rate of arrest for black people is highest in Manhattan, where it is $9.82\%$. This is only one example. See the appendix for the proportion test for all races' arrest rates in the different cities.
+
+
+# Comparison between 2010 and 2015
+
+##  Overview
+We are mainly interested in how the composition of people arrested changes between 2010 and 2015, espeically in terms of races.
+
+We can first look at some basic information of the two years.
+
+The number of people who got arrested in 2010 is,
+
+```{r}
+arst2010=sqf2010$arstmade
+sum(arst2010)
+```
+
+Out of a population size of
+
+```{r}
+length(arst2010)
+```
+
+Therefore, the percentage of arrest is around 6.83\%
+
+```{r}
+sum(arst2010)/length(arst2010)
+```
+
+Similarly, for 2015,
+
+```{r}
+arst2015=sqf2015$arstmade
+sum(arst2015)
+length(arst2015)
+sum(arst2015)/length(arst2015)
+```
+
+We have 3936 people who got arrested out of 22502, the arrest rate is around 17.49\%
+
+## Arrested population for each race
+
+We can now look at the breakdown of arrested population in race.
+
+In 2010, we have,
+
+```{r}
+counts2010=table(sqf2010$arstmade,sqf2010$race)
+counts2010
+barplot(counts2010)
+```
+
+
+we can also convert the data into percentage
+
+```{r}
+perc2010=prop.table(counts2010,2)
+perc2010
+```
+
+then we have a percentage of arrested for each race,
+
+American Indian/Alaskan Native: 4.89\%
+
+Asian/Parcific Islander: 6.69\%
+
+Black:  6.83\%
+
+Black-hispanic: 7.83\%
+
+Other: 5.57\%
+
+Unknown:  6.39\%
+
+White: 6.75\%
+
+White-hispanic: 6.80\%
+
+which we can also plot on a barplot,
+
+```{r}
+barplot(perc2010)
+```
+
+similarly, we calculate the statistics of 2015,
+
+```{r}
+counts2015=table(sqf2015$arstmade,sqf2015$race)
+counts2015
+barplot(counts2015)
+perc2015=prop.table(counts2015,2)
+perc2015
+barplot(perc2015)
+```
+
+To visualize the difference, we put the two bar plots of percentage together,
+
+```{r}
+par(mfrow=c(1,2))
+barplot(perc2010)
+barplot(perc2015)
+par(mfrow=c(1,2))
+```
+
+For year 2010, the race that is most likely to be arrested is black-hispanic, and it stays the same for year 2015.
+# Conclusion
+In this study we have explored the different arrest rates for different races in different neighborhoods. We were able to find that with 95% confidence, for any given race, that race is not arrested at the same rate in each neighborhood (except for American Indians, for whom there was not enough data).
+
+Additionally, we explored the changes that took place for arrest rates between 2010 and 2015. This showed that there was an almost 3x increase in the arrest rate between 2010 and 2015. Also, we performed proportion tests (in Appendix A) that showed the p-values for the proportions of people arrested by race in each neighborhood were far lower than the p-values for the same tests in 2015. A higher p-value implies that there is less certainty that races are being discriminated against in different neighborhoods.
+
+Overall, it is almost certain that people are not being arrested at the same rate in each neighborhood, no matter their race. Some neighborhoods have higher arrest rates, which may point to the inefficacy of the SQF policies in the NYPD between 2010 and 2015.
+
+# Appendix A: More Proportion Tests
+
+Below are the proportion tests for the difference in arrest rates for each race in each neighborhood in 2010. The null hypothesis being tested is that $p_1 = p_2 = p_3 = p_4 = p_5$.
+```{r 2010 Proportion Tests, echo=FALSE}
+#                   SUBSET DATA
+#Subset the data by race in Bronx
+sqf2010BX<-subset(sqf2010, sqf2010$city=="BRONX")
+sqf2010BXAI <-subset(sqf2010BX, sqf2010BX$race=="AMERICAN INDIAN/ALASKAN NATIVE")
+sqf2010BXA <-subset(sqf2010BX, sqf2010BX$race=="ASIAN/PACIFIC ISLANDER")
+sqf2010BXB <-subset(sqf2010BX, sqf2010BX$race=="BLACK")
+sqf2010BXBH <-subset(sqf2010BX, sqf2010BX$race=="BLACK-HISPANIC")
+sqf2010BXO <-subset(sqf2010BX, sqf2010BX$race=="OTHER")
+sqf2010BXU <-subset(sqf2010BX, sqf2010BX$race=="UNKNOWN")
+sqf2010BXW <-subset(sqf2010BX, sqf2010BX$race=="WHITE")
+sqf2010BXWH <-subset(sqf2010BX, sqf2010BX$race=="WHITE-HISPANIC")
+
+#Subset the data by race in Brooklyn
+sqf2010BY<-subset(sqf2010, sqf2010$city=="BROOKLYN")
+sqf2010BYAI <-subset(sqf2010BY, sqf2010BY$race=="AMERICAN INDIAN/ALASKAN NATIVE")
+sqf2010BYA <-subset(sqf2010BY, sqf2010BY$race=="ASIAN/PACIFIC ISLANDER")
+sqf2010BYB <-subset(sqf2010BY, sqf2010BY$race=="BLACK")
+sqf2010BYBH <-subset(sqf2010BY, sqf2010BY$race=="BLACK-HISPANIC")
+sqf2010BYO <-subset(sqf2010BY, sqf2010BY$race=="OTHER")
+sqf2010BYU <-subset(sqf2010BY, sqf2010BY$race=="UNKNOWN")
+sqf2010BYW <-subset(sqf2010BY, sqf2010BY$race=="WHITE")
+sqf2010BYWH <-subset(sqf2010BY, sqf2010BY$race=="WHITE-HISPANIC")
+
+#Subset the data by race in Manhattan
+sqf2010M<-subset(sqf2010, sqf2010$city=="MANHATTAN")
+sqf2010MAI <-subset(sqf2010M, sqf2010M$race=="AMERICAN INDIAN/ALASKAN NATIVE")
+sqf2010MA <-subset(sqf2010M, sqf2010M$race=="ASIAN/PACIFIC ISLANDER")
+sqf2010MB <-subset(sqf2010M, sqf2010M$race=="BLACK")
+sqf2010MBH <-subset(sqf2010M, sqf2010M$race=="BLACK-HISPANIC")
+sqf2010MO <-subset(sqf2010M, sqf2010M$race=="OTHER")
+sqf2010MU <-subset(sqf2010M, sqf2010M$race=="UNKNOWN")
+sqf2010MW <-subset(sqf2010M, sqf2010M$race=="WHITE")
+sqf2010MWH <-subset(sqf2010M, sqf2010M$race=="WHITE-HISPANIC")
+
+#Subset the data by race in Queens
+sqf2010Q<-subset(sqf2010, sqf2010$city=="QUEENS")
+sqf2010QAI <-subset(sqf2010Q, sqf2010Q$race=="AMERICAN INDIAN/ALASKAN NATIVE")
+sqf2010QA <-subset(sqf2010Q, sqf2010Q$race=="ASIAN/PACIFIC ISLANDER")
+sqf2010QB <-subset(sqf2010Q, sqf2010Q$race=="BLACK")
+sqf2010QBH <-subset(sqf2010Q, sqf2010Q$race=="BLACK-HISPANIC")
+sqf2010QO <-subset(sqf2010Q, sqf2010Q$race=="OTHER")
+sqf2010QU <-subset(sqf2010Q, sqf2010Q$race=="UNKNOWN")
+sqf2010QW <-subset(sqf2010Q, sqf2010Q$race=="WHITE")
+sqf2010QWH <-subset(sqf2010Q, sqf2010Q$race=="WHITE-HISPANIC")
+
+#Subset the data by race in Staten Island
+sqf2010SI<-subset(sqf2010, sqf2010$city=="STATEN IS")
+sqf2010SIAI <-subset(sqf2010SI, sqf2010SI$race=="AMERICAN INDIAN/ALASKAN NATIVE")
+sqf2010SIA <-subset(sqf2010SI, sqf2010SI$race=="ASIAN/PACIFIC ISLANDER")
+sqf2010SIB <-subset(sqf2010SI, sqf2010SI$race=="BLACK")
+sqf2010SIBH <-subset(sqf2010SI, sqf2010SI$race=="BLACK-HISPANIC")
+sqf2010SIO <-subset(sqf2010SI, sqf2010SI$race=="OTHER")
+sqf2010SIU <-subset(sqf2010SI, sqf2010SI$race=="UNKNOWN")
+sqf2010SIW <-subset(sqf2010SI, sqf2010SI$race=="WHITE")
+sqf2010SIWH <-subset(sqf2010SI, sqf2010SI$race=="WHITE-HISPANIC")
+
+#                   ARREST RATE PER SUBSET
+#Arrest rate in Bronx
+arstRate2010BX <- sum(sqf2010BX$arstmade)/length(sqf2010BX$arstmade)
+arstRate2010BXAI <- sum(sqf2010BXAI$arstmade)/length(sqf2010BXAI$arstmade)
+arstRate2010BXA <- sum(sqf2010BXA$arstmade)/length(sqf2010BXA$arstmade)
+arstRate2010BXB <- sum(sqf2010BXB$arstmade)/length(sqf2010BXB$arstmade)
+arstRate2010BXBH <- sum(sqf2010BXBH$arstmade)/length(sqf2010BXBH$arstmade)
+arstRate2010BXO <- sum(sqf2010BXO$arstmade)/length(sqf2010BXO$arstmade)
+arstRate2010BXU <- sum(sqf2010BXU$arstmade)/length(sqf2010BXU$arstmade)
+arstRate2010BXW <- sum(sqf2010BXW$arstmade)/length(sqf2010BXW$arstmade)
+arstRate2010BXWH <- sum(sqf2010BXWH$arstmade)/length(sqf2010BXWH$arstmade)
+
+#Arrest rate in Brooklyn
+arstRate2010BY <- sum(sqf2010BY$arstmade)/length(sqf2010BY$arstmade)
+arstRate2010BYAI <- sum(sqf2010BYAI$arstmade)/length(sqf2010BYAI$arstmade)
+arstRate2010BYA <- sum(sqf2010BYA$arstmade)/length(sqf2010BYA$arstmade)
+arstRate2010BYB <- sum(sqf2010BYB$arstmade)/length(sqf2010BYB$arstmade)
+arstRate2010BYBH <- sum(sqf2010BYBH$arstmade)/length(sqf2010BYBH$arstmade)
+arstRate2010BYO <- sum(sqf2010BYO$arstmade)/length(sqf2010BYO$arstmade)
+arstRate2010BYU <- sum(sqf2010BYU$arstmade)/length(sqf2010BYU$arstmade)
+arstRate2010BYW <- sum(sqf2010BYW$arstmade)/length(sqf2010BYW$arstmade)
+arstRate2010BYWH <- sum(sqf2010BYWH$arstmade)/length(sqf2010BYWH$arstmade)
+
+#Arrest rate in Manhattan
+arstRate2010M <- sum(sqf2010M$arstmade)/length(sqf2010M$arstmade)
+arstRate2010MAI <- sum(sqf2010MAI$arstmade)/length(sqf2010MAI$arstmade)
+arstRate2010MA <- sum(sqf2010MA$arstmade)/length(sqf2010MA$arstmade)
+arstRate2010MB <- sum(sqf2010MB$arstmade)/length(sqf2010MB$arstmade)
+arstRate2010MBH <- sum(sqf2010MBH$arstmade)/length(sqf2010MBH$arstmade)
+arstRate2010MO <- sum(sqf2010MO$arstmade)/length(sqf2010MO$arstmade)
+arstRate2010MU <- sum(sqf2010MU$arstmade)/length(sqf2010MU$arstmade)
+arstRate2010MW <- sum(sqf2010MW$arstmade)/length(sqf2010MW$arstmade)
+arstRate2010MWH <- sum(sqf2010MWH$arstmade)/length(sqf2010MWH$arstmade)
+
+#Arrest rate in Queens
+arstRate2010Q <- sum(sqf2010Q$arstmade)/length(sqf2010Q$arstmade)
+arstRate2010QAI <- sum(sqf2010QAI$arstmade)/length(sqf2010QAI$arstmade)
+arstRate2010QA <- sum(sqf2010QA$arstmade)/length(sqf2010QA$arstmade)
+arstRate2010QB <- sum(sqf2010QB$arstmade)/length(sqf2010QB$arstmade)
+arstRate2010QBH <- sum(sqf2010QBH$arstmade)/length(sqf2010QBH$arstmade)
+arstRate2010QO <- sum(sqf2010QO$arstmade)/length(sqf2010QO$arstmade)
+arstRate2010QU <- sum(sqf2010QU$arstmade)/length(sqf2010QU$arstmade)
+arstRate2010QW <- sum(sqf2010QW$arstmade)/length(sqf2010QW$arstmade)
+arstRate2010QWH <- sum(sqf2010QWH$arstmade)/length(sqf2010QWH$arstmade)
+
+#Arrest rate in Staten Island
+arstRate2010SI <- sum(sqf2010SI$arstmade)/length(sqf2010SI$arstmade)
+arstRate2010SIAI <- sum(sqf2010SIAI$arstmade)/length(sqf2010SIAI$arstmade)
+arstRate2010SIA <- sum(sqf2010SIA$arstmade)/length(sqf2010SIA$arstmade)
+arstRate2010SIB <- sum(sqf2010SIB$arstmade)/length(sqf2010SIB$arstmade)
+arstRate2010SIBH <- sum(sqf2010SIBH$arstmade)/length(sqf2010SIBH$arstmade)
+arstRate2010SIO <- sum(sqf2010SIO$arstmade)/length(sqf2010SIO$arstmade)
+arstRate2010SIU <- sum(sqf2010SIU$arstmade)/length(sqf2010SIU$arstmade)
+arstRate2010SIW <- sum(sqf2010SIW$arstmade)/length(sqf2010SIW$arstmade)
+arstRate2010SIWH <- sum(sqf2010SIWH$arstmade)/length(sqf2010SIWH$arstmade)
+
+#                   P-TESTS PER ARREST RATES
+
+#P-test of arrest rate of Asians per city
+numAsianArrested <- c(sum(sqf2010BXA$arstmade), sum(sqf2010BYA$arstmade), sum(sqf2010MA$arstmade), sum(sqf2010QA$arstmade), sum(sqf2010SIA$arstmade))
+numAsian <- c(dim(sqf2010BXA)[1], dim(sqf2010BYA)[1], dim(sqf2010MA)[1], dim(sqf2010QA)[1], dim(sqf2010SIA)[1])
+```
+
+## Proportion Test for Asians arrested in different neighborhoods
+```{r echo = FALSE}
+prop.test(x=numAsianArrested, n=numAsian)
+
+#P-test of arrest rate of American Indians per city
+numAmIndianArrested <- c(sum(sqf2010BXAI$arstmade), sum(sqf2010BYAI$arstmade), sum(sqf2010MAI$arstmade), sum(sqf2010QAI$arstmade), sum(sqf2010SIAI$arstmade))
+numAmIndian <- c(dim(sqf2010BXAI)[1], dim(sqf2010BYAI)[1], dim(sqf2010MAI)[1], dim(sqf2010QAI)[1], dim(sqf2010SIAI)[1])
+```
+
+## Proportion Test for American Indians arrested in different neighborhoods
+``` {r echo = FALSE}
+prop.test(x=numAmIndianArrested, n=numAmIndian)
+
+#P-test of arrest rate of Blacks per city
+numBlackArrested <- c(sum(sqf2010BXB$arstmade), sum(sqf2010BYB$arstmade), sum(sqf2010MB$arstmade), sum(sqf2010QB$arstmade), sum(sqf2010SIB$arstmade))
+numBlack <- c(dim(sqf2010BXB)[1], dim(sqf2010BYB)[1], dim(sqf2010MB)[1], dim(sqf2010QB)[1], dim(sqf2010SIB)[1])
+```
+
+## Proportion Test for Blacks arrested in different neighborhoods
+``` {r echo = FALSE}
+prop.test(x=numBlackArrested, n=numBlack)
+
+#P-test of arrest rate of Black Hispanics per city
+numBlackHispanicArrested <- c(sum(sqf2010BXBH$arstmade), sum(sqf2010BYBH$arstmade), sum(sqf2010MBH$arstmade), sum(sqf2010QBH$arstmade), sum(sqf2010SIBH$arstmade))
+numBlackHispanic <- c(dim(sqf2010BXBH)[1], dim(sqf2010BYBH)[1], dim(sqf2010MBH)[1], dim(sqf2010QBH)[1], dim(sqf2010SIBH)[1])
+```
+
+## Proportion Test for Black-Hispanics arrested in different neighborhoods
+``` {r echo = FALSE}
+prop.test(x=numBlackHispanicArrested, n=numBlackHispanic)
+
+#P-test of arrest rate of Others per city
+numOtherArrested <- c(sum(sqf2010BXO$arstmade), sum(sqf2010BYO$arstmade), sum(sqf2010MO$arstmade), sum(sqf2010QO$arstmade), sum(sqf2010SIO$arstmade))
+numOther <- c(dim(sqf2010BXO)[1], dim(sqf2010BYO)[1], dim(sqf2010MO)[1], dim(sqf2010QO)[1], dim(sqf2010SIO)[1])
+```
+
+## Proportion Test for Others arrested in different neighborhoods
+``` {r echo=FALSE}
+prop.test(x=numOtherArrested, n=numOther)
+
+#P-test of arrest rate of Unknown per city
+numUnknownArrested <- c(sum(sqf2010BXU$arstmade), sum(sqf2010BYU$arstmade), sum(sqf2010MU$arstmade), sum(sqf2010QU$arstmade), sum(sqf2010SIU$arstmade))
+numUnknown <- c(dim(sqf2010BXU)[1], dim(sqf2010BYU)[1], dim(sqf2010MU)[1], dim(sqf2010QU)[1], dim(sqf2010SIU)[1])
+```
+
+## Proportion Test for Unknowns arrested in different neighborhoods
+```{r echo = FALSE}
+prop.test(x=numUnknownArrested, n=numUnknown)
+
+#P-test of arrest rate of Whites per city
+numWhiteArrested <- c(sum(sqf2010BXW$arstmade), sum(sqf2010BYW$arstmade), sum(sqf2010MW$arstmade), sum(sqf2010QW$arstmade), sum(sqf2010SIW$arstmade))
+numWhite <- c(dim(sqf2010BXW)[1], dim(sqf2010BYW)[1], dim(sqf2010MW)[1], dim(sqf2010QW)[1], dim(sqf2010SIW)[1])
+```
+
+## Proportion Test for Whites arrested in different neighborhoods
+```{r echo = FALSE}
+prop.test(x=numWhiteArrested, n=numWhite)
+
+#P-test of arrest rate of White Hispanics per city
+numWhiteHispArrested <- c(sum(sqf2010BXWH$arstmade), sum(sqf2010BYWH$arstmade), sum(sqf2010MWH$arstmade), sum(sqf2010QWH$arstmade), sum(sqf2010SIWH$arstmade))
+numWhiteHisp <- c(dim(sqf2010BXWH)[1], dim(sqf2010BYWH)[1], dim(sqf2010MWH)[1], dim(sqf2010QWH)[1], dim(sqf2010SIWH)[1])
+```
+
+## Proportion Test for White-Hispanics arrested in different neighborhoods
+``` {r echo=FALSE}
+prop.test(x=numWhiteHispArrested, n=numWhiteHisp)
+```
+
+
+
+
+
+Below are the proportion tests for the difference in arrest rates for each race in each neighborhood in 2015. The null hypothesis being tested is that $p_1 = p_2 = p_3 = p_4 = p_5$.
+
+## Proportion Test for Asians arrested in different neighborhoods
+```{r echo=FALSE}
+prop.test(x=numAsianArrested, n=numAsian)
+
+#P-test of arrest rate of American Indians per city
+numAmIndianArrested <- c(sum(sqf2015BXAI$arstmade), sum(sqf2015BYAI$arstmade), sum(sqf2015MAI$arstmade), sum(sqf2015QAI$arstmade), sum(sqf2015SIAI$arstmade))
+numAmIndian <- c(dim(sqf2015BXAI)[1], dim(sqf2015BYAI)[1], dim(sqf2015MAI)[1], dim(sqf2015QAI)[1], dim(sqf2015SIAI)[1])
+```
+
+## Proportion Test for American Indians arrested in different neighborhoods
+```{r echo = FALSE}
+prop.test(x=numAmIndianArrested, n=numAmIndian)
+
+#P-test of arrest rate of Blacks per city
+numBlackArrested <- c(sum(sqf2015BXB$arstmade), sum(sqf2015BYB$arstmade), sum(sqf2015MB$arstmade), sum(sqf2015QB$arstmade), sum(sqf2015SIB$arstmade))
+numBlack <- c(dim(sqf2015BXB)[1], dim(sqf2015BYB)[1], dim(sqf2015MB)[1], dim(sqf2015QB)[1], dim(sqf2015SIB)[1])
+```
+
+## Proportion Test for Blacks arrested in different neighborhoods
+``` {r  echo=FALSE}
+prop.test(x=numBlackArrested, n=numBlack)
+
+#P-test of arrest rate of Black Hispanics per city
+numBlackHispanicArrested <- c(sum(sqf2015BXBH$arstmade), sum(sqf2015BYBH$arstmade), sum(sqf2015MBH$arstmade), sum(sqf2015QBH$arstmade), sum(sqf2015SIBH$arstmade))
+numBlackHispanic <- c(dim(sqf2015BXBH)[1], dim(sqf2015BYBH)[1], dim(sqf2015MBH)[1], dim(sqf2015QBH)[1], dim(sqf2015SIBH)[1])
+```
+
+
+## Proportion Test for Black-Hispanics arrested in different neighborhoods
+``` {r  echo=FALSE}
+prop.test(x=numBlackHispanicArrested, n=numBlackHispanic)
+
+#P-test of arrest rate of Others per city
+numOtherArrested <- c(sum(sqf2015BXO$arstmade), sum(sqf2015BYO$arstmade), sum(sqf2015MO$arstmade), sum(sqf2015QO$arstmade), sum(sqf2015SIO$arstmade))
+numOther <- c(dim(sqf2015BXO)[1], dim(sqf2015BYO)[1], dim(sqf2015MO)[1], dim(sqf2015QO)[1], dim(sqf2015SIO)[1])
+```
+
+## Proportion Test for Others arrested in different neighborhoods
+``` {r echo=FALSE}
+prop.test(x=numOtherArrested, n=numOther)
+
+#P-test of arrest rate of Unknown per city
+numUnknownArrested <- c(sum(sqf2015BXU$arstmade), sum(sqf2015BYU$arstmade), sum(sqf2015MU$arstmade), sum(sqf2015QU$arstmade), sum(sqf2015SIU$arstmade))
+numUnknown <- c(dim(sqf2015BXU)[1], dim(sqf2015BYU)[1], dim(sqf2015MU)[1], dim(sqf2015QU)[1], dim(sqf2015SIU)[1])
+```
+## Proportion Test for Unknown Race arrested in different neighborhoods
+```{r echo = FALSE}
+prop.test(x=numUnknownArrested, n=numUnknown)
+
+#P-test of arrest rate of Whites per city
+numWhiteArrested <- c(sum(sqf2015BXW$arstmade), sum(sqf2015BYW$arstmade), sum(sqf2015MW$arstmade), sum(sqf2015QW$arstmade), sum(sqf2015SIW$arstmade))
+numWhite <- c(dim(sqf2015BXW)[1], dim(sqf2015BYW)[1], dim(sqf2015MW)[1], dim(sqf2015QW)[1], dim(sqf2015SIW)[1])
+```
+
+## Proportion Test for Whites arrested in different neighborhoods
+```{r echo = FALSE}
+prop.test(x=numWhiteArrested, n=numWhite)
+
+#P-test of arrest rate of White Hispanics per city
+numWhiteHispArrested <- c(sum(sqf2015BXWH$arstmade), sum(sqf2015BYWH$arstmade), sum(sqf2015MWH$arstmade), sum(sqf2015QWH$arstmade), sum(sqf2015SIWH$arstmade))
+numWhiteHisp <- c(dim(sqf2015BXWH)[1], dim(sqf2015BYWH)[1], dim(sqf2015MWH)[1], dim(sqf2015QWH)[1], dim(sqf2015SIWH)[1])
+```
+
+## Proportion Test for White-Hispanics arrested in different neighborhoods
+``` {r echo=FALSE}
+prop.test(x=numWhiteHispArrested, n=numWhiteHisp)
+```
+
+
+
+
+

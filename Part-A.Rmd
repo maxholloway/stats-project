@@ -1,5 +1,6 @@
 ---
 title: "Final Project Part A"
+author: "Keizo Morgan, Max Holloway, Bowen Jiang, Jorge Canedo"
 output: pdf_document
 ---
 
